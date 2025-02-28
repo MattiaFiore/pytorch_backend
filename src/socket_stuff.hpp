@@ -6,11 +6,11 @@
 
 //CUSTOM PROTOCOL 
 struct protocol_header {
-  uint16_t data[25]; //100bytes of data 
+  float data[25]; //100bytes of data 
 }__attribute__((packed));
 
 //IP CHECKSUM CALCULATION 
 unsigned short csum(unsigned short *buf, int nwords); 
-void BuildPacket(char (&packet)[4096]);
+void BuildPacket(char (&packet)[4096], float * start, float * end);
 
 #endif

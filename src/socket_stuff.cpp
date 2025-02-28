@@ -14,12 +14,12 @@ unsigned short csum(unsigned short *buf, int nwords){
     return (unsigned short)(~sum);
 }
 
-void BuildPacket(char (&packet)[4096]){
+void BuildPacket(char (&packet)[4096], float * start, float * end){
 
     struct iphdr * ip = (struct iphdr *) packet; 
     protocol_header * new_hdr = (protocol_header *) (packet + sizeof(struct iphdr)); 
-    for (int i = 0; i < 25; ++i){
-        new_hdr->data[i] = 0xCCCC; 
+    for (int i = 0; start<end; ++start, ++i){
+        new_hdr->data[i] = *start;   
     }
 
     ip->ihl = 5; 
@@ -37,3 +37,4 @@ void BuildPacket(char (&packet)[4096]){
     ip->check = csum((unsigned short *) packet, ip->ihl * 2);//Computing the checksum
 
 }
+

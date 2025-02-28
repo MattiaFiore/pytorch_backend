@@ -75,8 +75,8 @@ c10::intrusive_ptr<Work> BackendDummy::send(
   // Creating the buffer to send the packet 
 
   char packet[4096]; 
-  memset(&packet, 0, sizeof(packet)); 
-  BuildPacket(packet); 
+   
+
 
   // SISTEMA STA PARTE
   int tot_len = sizeof(struct iphdr) + sizeof(protocol_header); 
@@ -88,24 +88,62 @@ c10::intrusive_ptr<Work> BackendDummy::send(
   dest.sin_family = AF_INET;
   dest.sin_addr.s_addr = inet_addr("10.0.0.2");
 
-  // NOT SENDING REAL DATA BUT SENDING JUST 25 uint32 WITH SAME DATA
-  if ( sendto(sockFD_, packet, tot_len, 0,
+  
+  // THE tensor VARIABLE IS A LIST OF TENSORS 
+  // FOR EACH TENSOR WE COMPUTE HOW MANY NUMBERS THEY HAVE 
+  // TO SERIALIZE THE TENSOR YOU NEED TO USE serializeTensor
+  
+  // Ensure the tensor is contiguous.
+  for (auto & tensor: tensors){
+    tensor = tensor.contiguous();
+
+    // Total number of elements.
+    int64_t num_elements = tensor.numel();
+
+    int n_elem_per_packet = 25; 
+    int n_packets = num_elements / n_elem_per_packet + 1; 
+    cout << "Number of elements: " << num_elements << std::endl; 
+    cout << "Number of packets: " << n_packets << std::endl; 
+    // Pointer to the underlying data.
+    float* data_ptr = tensor.data_ptr<float>();
+    /*
+    for (int i = 0; i < num_elements; ++i, ++data_ptr){
+        cout << (*data_ptr) << std::endl; 
+    }
+    */
+   float* end_ptr = data_ptr + num_elements; 
+
+   for (int i = 0; i < n_packets; ++i){
+      memset(&packet, 0, sizeof(packet));
+      if (data_ptr + n_elem_per_packet > end_ptr ){
+          BuildPacket(packet, data_ptr, end_ptr); 
+      } else {
+          BuildPacket(packet, data_ptr, data_ptr+n_elem_per_packet); 
+      }
+
+      // After the packet is built you can send it 
+      if ( sendto(sockFD_, packet, tot_len, 0,
             (struct sockaddr *)&dest, sizeof(dest)) < 0) {
                 perror("sendto");
                 close(sockFD_); 
                 exit(EXIT_FAILURE); 
             }
 
-  cout<< "Send successful"<< std::endl; 
+      cout<< "Send successful"<< std::endl; 
+      data_ptr += n_elem_per_packet ;
+      
+   }
+
+  }
+  
+  
 
   // For this minimal example, we simply mark the future as completed.
   future->markCompleted(c10::IValue(tensors));
 
   return work;
 }
-void BuildPacket(char (&packet)[4096]){
-  // 
-}
+
 
 } // namespace c10d
 
