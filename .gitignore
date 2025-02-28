@@ -1,0 +1,12 @@
+/.vscode
+/build
+/dist
+/Dummy_Collectives.egg-info
+/libtorch
+/log
+/network
+/p4src
+/pcap
+/pictures
+
+topology.json
