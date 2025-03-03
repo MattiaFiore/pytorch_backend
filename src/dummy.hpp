@@ -52,6 +52,10 @@ class BackendDummy : public Backend {
  private:
   // For a real implementation, you might store a socket descriptor here.
   int sockFD_{-1};
+  // IP address of the host 
+  sockaddr_in IPV4_addr; 
+  // IPv4 string 
+  char ipstring[25]; 
 };
 
 } // namespace c10d

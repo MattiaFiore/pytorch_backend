@@ -11,6 +11,9 @@ struct protocol_header {
 
 //IP CHECKSUM CALCULATION 
 unsigned short csum(unsigned short *buf, int nwords); 
+// FUNCTION TO BUILD THE PACKET 
 void BuildPacket(char (&packet)[4096], float * start, float * end);
+// FUNCTION TO EXTRACT AUTOMATICALLY THE IP FOR THE HOST
+bool getLocalIP(struct sockaddr_in &source); 
 
 #endif

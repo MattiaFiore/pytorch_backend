@@ -26,7 +26,17 @@ BackendDummy::BackendDummy(int rank, int size)
   
   // In the constructor the socket is initialized. 
   cout<< "Starting the socket..." <<std::endl; 
-   
+
+  // Getting the IP address 
+  if (!getLocalIP(IPV4_addr)){
+        std::cout << "ERRORE" << std::endl; 
+        exit(EXIT_FAILURE); 
+  }
+
+  inet_ntop(AF_INET, &IPV4_addr.sin_addr, ipstring, sizeof(ipstring));
+  std::cout << "The IP address is: " << ipstring << std::endl; 
+
+  // Starting the socket 
   sockFD_ = socket(AF_INET, SOCK_RAW, CUSTOM_PROTOCOL); 
   if (sockFD_ < 0){
     cout << "ERRORE" << std::endl; \

@@ -1,6 +1,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>  // For inet_addr()
-
+#include <ifaddrs.h> // For extracting the ip address 
 #include "socket_stuff.hpp"
 #include "dummy.hpp"
 
@@ -14,6 +14,38 @@ unsigned short csum(unsigned short *buf, int nwords){
     return (unsigned short)(~sum);
 }
 
+// Getting the IP of the host
+bool getLocalIP(sockaddr_in &localAddr) {
+    struct ifaddrs *ifaddr, *ifa;
+    
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs");
+        return false;
+    }
+    
+    bool found = false;
+    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == nullptr)
+            continue;
+        
+        // Check for IPv4 addresses
+        if (ifa->ifa_addr->sa_family == AF_INET) {
+            // Optionally skip loopback interfaces (typically "lo")
+            if (std::string(ifa->ifa_name) == "lo")
+                continue;
+            
+            // Copy the IPv4 address into localAddr
+            localAddr = *(reinterpret_cast<sockaddr_in*>(ifa->ifa_addr));
+            found = true;
+            break;  // Use the first found non-loopback IPv4 address
+        }
+    }
+    
+    freeifaddrs(ifaddr);
+    return found;
+}
+
+// Building the packet in the correct form 
 void BuildPacket(char (&packet)[4096], float * start, float * end){
 
     struct iphdr * ip = (struct iphdr *) packet; 
