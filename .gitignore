@@ -4,9 +4,9 @@
 /Dummy_Collectives.egg-info
 /libtorch
 /log
-/network
-/p4src
 /pcap
 /pictures
+/p4src/connecting.json
+/p4src/connecting.p4i
 
 topology.json
