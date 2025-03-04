@@ -8,6 +8,10 @@
 
 #include <optional>
 #include <vector>
+#include <thread>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
 
 namespace c10d {
 
@@ -51,7 +55,18 @@ class BackendDummy : public Backend {
 
  private:
   // For a real implementation, you might store a socket descriptor here.
-  int sockFD_{-1};
+  int sockFD_send_; // Sending socket
+  int sockFD_recv_; // Receiving socket
+  std::thread sendThread_; // Sending thread 
+  std::thread recvThread_; // Receiving thread 
+  bool stopThreads_ = false; // Variable to stop sending and receiving threads 
+  void sendingLoop();
+  void receivingLoop();
+
+  std::queue<std::vector<char>> sendQueue_;
+  std::mutex queueMutex_;
+  std::condition_variable queueCV_;
+
   // IP address of the host 
   sockaddr_in IPV4_addr; 
   // IPv4 string 

@@ -1,6 +1,7 @@
 # Next task that will be implemented 
 
-- [ ] Modify the send function in order for it to be able to send and receive 
+- [ ] Create a queue to receive the packets 
+- [ ] Fix receiving loop 
 - [ ] Verify the correctness of receive through a python script 
 
 # Important stuff that will be implemented after 
@@ -14,6 +15,8 @@
 - [x] Each host must set his own IP address in an automatic whay
 - [x] Sending the actual tensor data 
 - [x] Create the mininet topology in order to execute the code to test it 
+- [x] Added sending loop in a thread
+- [x] Added queue to manage the packet that should be sent
 
 # Running the code
 

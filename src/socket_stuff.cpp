@@ -4,15 +4,33 @@
 #include "socket_stuff.hpp"
 #include "dummy.hpp"
 
-// IPv4 CHECKSUM calculation 
-unsigned short csum(unsigned short *buf, int nwords){    
+// IPv4 CHECKSUM calculation for a Packet.
+// This function calculates the checksum over the entire packet.
+unsigned short csum(const Packet &packet) {
     unsigned long sum = 0;
-    for (; nwords > 0; nwords--)
-        sum += *buf++;
-    sum = (sum >> 16) + (sum & 0xffff);
-    sum += (sum >> 16);
-    return (unsigned short)(~sum);
+    const size_t size = packet.size();
+    
+    // Process 16-bit words.
+    const uint16_t* ptr = reinterpret_cast<const uint16_t*>(packet.data());
+    size_t nwords = size / 2;
+    for (size_t i = 0; i < nwords; ++i) {
+        sum += ptr[i];
+    }
+    
+    // If there's an odd byte, pad with zero to form the last 16-bit word.
+    if (size & 1) {
+        sum += static_cast<uint8_t>(packet[size - 1]);
+    }
+    
+    // Fold 32-bit sum to 16 bits: add carrier to result
+    while (sum >> 16) {
+        sum = (sum & 0xFFFF) + (sum >> 16);
+    }
+    
+    // Return one's complement of the sum.
+    return static_cast<unsigned short>(~sum);
 }
+
 
 // Getting the IP of the host
 bool getLocalIP(sockaddr_in &localAddr) {
@@ -46,10 +64,18 @@ bool getLocalIP(sockaddr_in &localAddr) {
 }
 
 // Building the packet in the correct form 
-void BuildPacket(char (&packet)[4096], float * start, float * end){
+void BuildPacket(Packet& packet, float * start, float * end){
 
-    struct iphdr * ip = (struct iphdr *) packet; 
-    protocol_header * new_hdr = (protocol_header *) (packet + sizeof(struct iphdr)); 
+    // Calculate required packet size.
+    constexpr size_t headerSize = sizeof(struct iphdr) + sizeof(protocol_header);
+    // Resize the vector to the exact packet size.
+    packet.resize(headerSize);
+    
+    // Optionally, zero the packet if needed.
+    std::memset(packet.data(), 0, headerSize);
+
+    struct iphdr * ip = reinterpret_cast<struct iphdr*>(packet.data());
+    protocol_header * new_hdr = reinterpret_cast<protocol_header*>(packet.data() + sizeof(struct iphdr));
     for (int i = 0; start<end; ++start, ++i){
         new_hdr->data[i] = *start;   
     }
@@ -66,7 +92,7 @@ void BuildPacket(char (&packet)[4096], float * start, float * end){
     ip->saddr    = inet_addr("10.0.0.1");   // Source IP address (adjust as needed)
     ip->daddr    = inet_addr("10.0.0.2");
 
-    ip->check = csum((unsigned short *) packet, ip->ihl * 2);//Computing the checksum
+    ip->check = csum(packet);//Computing the checksum
 
 }
 
