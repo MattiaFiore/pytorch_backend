@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DUMMY_H_
+#define DUMMY_H_
 
 #include <torch/csrc/distributed/c10d/Backend.hpp>
 #include <torch/csrc/distributed/c10d/Work.hpp>
@@ -46,6 +47,7 @@ class WorkDummy : public Work {
 class BackendDummy : public Backend {
  public:
   BackendDummy(int rank, int size);
+  ~BackendDummy(); 
 
   // Example override: a send operation.
   c10::intrusive_ptr<Work> send(
@@ -53,25 +55,26 @@ class BackendDummy : public Backend {
       int dstRank,
       int tag) override;
 
- private:
-  // For a real implementation, you might store a socket descriptor here.
-  int sockFD_send_; // Sending socket
-  int sockFD_recv_; // Receiving socket
-  std::thread sendThread_; // Sending thread 
-  std::thread recvThread_; // Receiving thread 
-  bool stopThreads_ = false; // Variable to stop sending and receiving threads 
-  void sendingLoop();
-  void receivingLoop();
+  private:
+    // For a real implementation, you might store a socket descriptor here.
+    int sockFD_send_; // Sending socket
+    int sockFD_recv_; // Receiving socket
+    std::thread sendThread_; // Sending thread 
+    std::thread recvThread_; // Receiving thread 
+    bool stopThreads_ = false; // Variable to stop sending and receiving threads 
+    void sendingLoop();
+    void receivingLoop();
 
-  std::queue<std::vector<char>> sendQueue_;
-  std::mutex queueMutex_;
-  std::condition_variable queueCV_;
+    std::queue<std::vector<char>> sendQueue_;
+    std::mutex queueMutex_;
+    std::condition_variable queueCV_;
 
-  // IP address of the host 
-  sockaddr_in IPV4_addr; 
-  // IPv4 string 
-  char ipstring[25]; 
+    // IP address of the host 
+    sockaddr_in IPV4_addr; 
+    // IPv4 string 
+    char ipstring[25]; 
 };
 
 } // namespace c10d
 
+#endif

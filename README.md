@@ -3,6 +3,8 @@
 - [ ] Create a queue to receive the packets 
 - [ ] Fix receiving loop 
 - [ ] Verify the correctness of receive through a python script 
+- [ ] fix the wait after send finished (remove time.sleep(100))
+
 
 # Important stuff that will be implemented after 
 
@@ -17,6 +19,8 @@
 - [x] Create the mininet topology in order to execute the code to test it 
 - [x] Added sending loop in a thread
 - [x] Added queue to manage the packet that should be sent
+- [x] Fix sending function 
+- [x] Verify send for bigger tensors 
 
 # Running the code
 

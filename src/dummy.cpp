@@ -21,6 +21,8 @@ using std::cout;
 
 BackendDummy::BackendDummy(int rank, int size)
     : Backend(rank, size) {
+
+  
   std::cout << "Constructing BackendDummy with rank=" << rank 
             << " and size=" << size << std::endl;
   
@@ -65,9 +67,10 @@ BackendDummy::BackendDummy(int rank, int size)
   }
   
   cout << "Started the RECV socket" << std::endl; 
-
+  
   sendThread_ = std::thread(&BackendDummy::sendingLoop, this); 
-  recvThread_ = std::thread(&BackendDummy::receivingLoop, this); 
+  recvThread_ = std::thread(&BackendDummy::receivingLoop, this);
+   
 
 }
 
@@ -78,6 +81,7 @@ void BackendDummy::sendingLoop() {
       memset(&dest, 0, sizeof(dest));
       dest.sin_family = AF_INET;
       dest.sin_addr.s_addr = inet_addr("10.0.0.2");
+
     {
       //Lock the queeue mutex 
       std::unique_lock<std::mutex> lock(queueMutex_);
@@ -95,8 +99,8 @@ void BackendDummy::sendingLoop() {
     if (sendto(sockFD_send_, packet.data(), packet.size(), 0,
          (struct sockaddr *)&dest, sizeof(dest)) < 0) { 
       perror("sendto");
-      close(sockFD_recv_);
-      close(sockFD_send_); 
+      //close(sockFD_recv_);
+      //close(sockFD_send_); 
       exit(EXIT_FAILURE); 
 
     
@@ -115,6 +119,28 @@ void BackendDummy::receivingLoop() {
     std::this_thread::sleep_for(std::chrono::seconds(20)); 
 
   }
+}
+
+BackendDummy::~BackendDummy() {
+  // Signal threads to stop
+  stopThreads_ = true;
+
+  // Wake up any waiting threads
+  queueCV_.notify_all();
+
+  // Join threads
+  if (sendThread_.joinable()) {
+    sendThread_.join();
+  }
+  if (recvThread_.joinable()) {
+    recvThread_.join();
+  }
+
+  // Close sockets once
+  close(sockFD_recv_);
+  close(sockFD_send_);
+
+  std::cout << "BackendDummy destructor completed.\n";
 }
 
 
@@ -155,7 +181,7 @@ c10::intrusive_ptr<Work> BackendDummy::send(
   // THE tensor VARIABLE IS A LIST OF TENSORS 
   // FOR EACH TENSOR WE COMPUTE HOW MANY NUMBERS THEY HAVE 
   // TO SERIALIZE THE TENSOR YOU NEED TO USE serializeTensor
-  
+    
     // Ensure the tensor is contiguous.
     for (auto & tensor: tensors){
       tensor = tensor.contiguous();
@@ -164,9 +190,17 @@ c10::intrusive_ptr<Work> BackendDummy::send(
       int64_t num_elements = tensor.numel();
 
       int n_elem_per_packet = 25; 
-      int n_packets = num_elements / n_elem_per_packet + 1; 
+
+      int n_packets;
+      if (num_elements % n_elem_per_packet == 0) {
+        n_packets = num_elements / n_elem_per_packet; 
+      } else {
+        n_packets = num_elements / n_elem_per_packet + 1; 
+      }
+
       cout << "Number of elements: " << num_elements << std::endl; 
       cout << "Number of packets: " << n_packets << std::endl; 
+      //std::this_thread::sleep_for(std::chrono::seconds(10)); 
       // Pointer to the underlying data.
       float* data_ptr = tensor.data_ptr<float>();
       /*
@@ -174,9 +208,9 @@ c10::intrusive_ptr<Work> BackendDummy::send(
           cout << (*data_ptr) << std::endl; 
       }
       */
-    float* end_ptr = data_ptr + num_elements; 
+      float* end_ptr = data_ptr + num_elements; 
 
-    for (int i = 0; i < n_packets; ++i){
+      for (int i = 0; i < n_packets; ++i){
         Packet packet; 
         //memset(&packet, 0, sizeof(packet));
         if (data_ptr + n_elem_per_packet > end_ptr ){
@@ -184,14 +218,16 @@ c10::intrusive_ptr<Work> BackendDummy::send(
         } else {
             BuildPacket(packet, data_ptr, data_ptr+n_elem_per_packet); 
         }
-
-
-        cout<< "[SEND FUNCTION]: packet added"<< std::endl; 
-        sendQueue_.push(std::move(packet));
+        // Acquire Mutex for adding packets in the queue 
+        {
+          std::lock_guard<std::mutex> lock(queueMutex_);
+          sendQueue_.push(std::move(packet));
+        }
         queueCV_.notify_one(); 
+        cout<< "[SEND FUNCTION]: packet added"<< std::endl; 
         data_ptr += n_elem_per_packet ;
         
-    }
+      }
 
     }
   

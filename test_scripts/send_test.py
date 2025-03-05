@@ -1,5 +1,6 @@
 import dummy_collectives
 import torch
+import time 
 
 def main():
     # Create a BackendDummy with rank=0 and world size=1.
@@ -7,17 +8,12 @@ def main():
     print("BackendDummy instance created:", backend)
     
     # Create a sample tensor.
-    tensor = torch.tensor([
-    [1, 2, 3, 1, 2, 3],
-    [4, 5, 6, 1, 2, 3],
-    [7, 8, 9, 1, 2, 3], 
-    [7, 8, 9, 1, 2, 3], 
-    [7, 8, 9, 1, 2, 3]
-    ], dtype=torch.float32)
+    tensor =  torch.ones((10_000, 10_000), dtype=torch.float32)
     
     # Call the send function on the backend.
     # Here, we're sending a list containing one tensor to destination rank 1 with tag 100.
-    work = backend.send([tensor, tensor], 1, 100)
+    work = backend.send([tensor], 1, 100)
+    time.sleep(100)
     
     # For this dummy backend, the send function immediately marks its operation as complete.
     # You might print the returned 'work' object or use it further depending on your design.
