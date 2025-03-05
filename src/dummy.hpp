@@ -65,9 +65,16 @@ class BackendDummy : public Backend {
     void sendingLoop();
     void receivingLoop();
 
+    // SENDING THREAD QUEUE ATTRIBUTES
     std::queue<std::vector<char>> sendQueue_;
-    std::mutex queueMutex_;
-    std::condition_variable queueCV_;
+    std::mutex send_queueMutex_;
+    std::condition_variable send_queueCV_;
+
+    // RECEIVING THREAD QUEUE ATTRIBUTES
+    std::queue<std::vector<char>> recvQueue_; 
+    std::mutex recv_queueMutex_; 
+    std::condition_variable recv_queueCV_; 
+
 
     // IP address of the host 
     sockaddr_in IPV4_addr; 

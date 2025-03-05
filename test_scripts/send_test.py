@@ -8,7 +8,7 @@ def main():
     print("BackendDummy instance created:", backend)
     
     # Create a sample tensor.
-    tensor =  torch.ones((10_000, 10_000), dtype=torch.float32)
+    tensor =  torch.ones((100, 1), dtype=torch.float32)
     
     # Call the send function on the backend.
     # Here, we're sending a list containing one tensor to destination rank 1 with tag 100.

@@ -1,7 +1,7 @@
 # Next task that will be implemented 
 
 - [ ] Create a queue to receive the packets 
-- [ ] Fix receiving loop 
+- [ ] Add the recev function
 - [ ] Verify the correctness of receive through a python script 
 - [ ] fix the wait after send finished (remove time.sleep(100))
 
@@ -11,7 +11,7 @@
 - [ ] Add the function to convert float into integers 
 - [ ] Implementing the aggregation in the switch 
 - [ ] Implement a timer for resending packets that were not acked 
-
+- [ ] Sender/Receiver should do a handshake to agree on the size of the tensor that their are going to exchange 
 
 # Completed tasks 
 - [x] Each host must set his own IP address in an automatic whay
@@ -21,6 +21,7 @@
 - [x] Added queue to manage the packet that should be sent
 - [x] Fix sending function 
 - [x] Verify send for bigger tensors 
+- [x] Fix receiving loop 
 
 # Running the code
 

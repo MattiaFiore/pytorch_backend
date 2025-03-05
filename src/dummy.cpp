@@ -84,9 +84,9 @@ void BackendDummy::sendingLoop() {
 
     {
       //Lock the queeue mutex 
-      std::unique_lock<std::mutex> lock(queueMutex_);
+      std::unique_lock<std::mutex> lock(send_queueMutex_);
       // wait for the queue to be not empty or for the threads to be stopped 
-      queueCV_.wait(lock, [&]{ return !sendQueue_.empty() || stopThreads_; });
+      send_queueCV_.wait(lock, [&]{ return !sendQueue_.empty() || stopThreads_; });
         if (stopThreads_) {
           break;
         } else {
@@ -112,12 +112,31 @@ void BackendDummy::sendingLoop() {
 }
 
 void BackendDummy::receivingLoop() {
-  //char buffer[4096];
+  
+  Packet packet; 
+  struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = htonl(INADDR_ANY);  
+  addr.sin_port = 0;
+  
   while (!stopThreads_) {
-    // SLEEPING 
-    cout << "[RECEIVING LOOP] Waiting for 20 seconds" << std::endl; 
-    std::this_thread::sleep_for(std::chrono::seconds(20)); 
-
+      // Resize the packet buffer to hold the expected packet
+      packet.resize(sizeof(struct iphdr) + sizeof(protocol_header)); 
+      
+      socklen_t addr_len = sizeof(addr);
+      ssize_t packet_size = recvfrom(sockFD_recv_, packet.data(), packet.size(), 0,
+                                     reinterpret_cast<struct sockaddr*>(&addr), &addr_len);
+      if (packet_size < 0) {
+          perror("recvfrom");
+          break;
+      }
+      
+      struct iphdr* ip = reinterpret_cast<struct iphdr*>(packet.data());
+      protocol_header* my_header = reinterpret_cast<protocol_header*>(packet.data() + sizeof(struct iphdr)); 
+      for (int i = 0; i < 25; ++i){
+          std::cout << "Float " << i << ": " << my_header->data[i] << std::endl; 
+      }
   }
 }
 
@@ -126,7 +145,7 @@ BackendDummy::~BackendDummy() {
   stopThreads_ = true;
 
   // Wake up any waiting threads
-  queueCV_.notify_all();
+  send_queueCV_.notify_all();
 
   // Join threads
   if (sendThread_.joinable()) {
@@ -220,10 +239,10 @@ c10::intrusive_ptr<Work> BackendDummy::send(
         }
         // Acquire Mutex for adding packets in the queue 
         {
-          std::lock_guard<std::mutex> lock(queueMutex_);
+          std::lock_guard<std::mutex> lock(send_queueMutex_);
           sendQueue_.push(std::move(packet));
         }
-        queueCV_.notify_one(); 
+        send_queueCV_.notify_one(); 
         cout<< "[SEND FUNCTION]: packet added"<< std::endl; 
         data_ptr += n_elem_per_packet ;
         
