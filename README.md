@@ -1,10 +1,13 @@
 # Next task that will be implemented 
 
-- [ ] Create a queue to receive the packets 
-- [ ] Add the recev function
-- [ ] Verify the correctness of receive through a python script 
-- [ ] fix the wait after send finished (remove time.sleep(100))
+*BACKEND*: 
+- [ ] Add a way to filter out packets that are not needed in the receivingLoop 
+- [ ] Use the prints only if specified in the execution in order to work only when debugging
+- [ ] Fix return type of the recv function 
+- [ ] Remove unused variables 
 
+*SWITCH*: 
+- [ ] Add parser 
 
 # Important stuff that will be implemented after 
 
@@ -22,6 +25,10 @@
 - [x] Fix sending function 
 - [x] Verify send for bigger tensors 
 - [x] Fix receiving loop 
+- [x] Create a queue to receive the packets 
+- [x] Add the recv function
+- [x] fix the wait after send finished (remove time.sleep(100))
+- [x] Verify the correctness of receive through a python script 
 
 # Running the code
 

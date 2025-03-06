@@ -132,11 +132,29 @@ void BackendDummy::receivingLoop() {
           break;
       }
       
+      // THIS WILL BE USE TO DISCARD OTHER PACKETS 
       struct iphdr* ip = reinterpret_cast<struct iphdr*>(packet.data());
       protocol_header* my_header = reinterpret_cast<protocol_header*>(packet.data() + sizeof(struct iphdr)); 
-      for (int i = 0; i < 25; ++i){
-          std::cout << "Float " << i << ": " << my_header->data[i] << std::endl; 
+      
+      // When packet arrives we store it in the recvQueue_
+      // The recv funciton of the backend will fetch the data and understand 
+      // what that is. 
+      cout<< "IP Protocol received: " << ip->protocol << std::endl; 
+
+      {
+        // Locking mutex
+        std::unique_lock<std::mutex> lock(recv_queueMutex_);
+        // Add the packet to the queue 
+        recvQueue_.push(packet); 
       }
+
+      ////////////////////////////////////////
+      // ADD THE NOTIFY FOR THE READ FUNCTION 
+      recv_queueCV_.notify_one(); 
+      ////////////////////////////////////////
+
+      std::cout<< "Pacchetti in recvQueue_: " << recvQueue_.size() << std::endl; 
+
   }
 }
 
@@ -250,7 +268,7 @@ c10::intrusive_ptr<Work> BackendDummy::send(
 
     }
   
-  
+
 
   // For this minimal example, we simply mark the future as completed.
   future->markCompleted(c10::IValue(tensors));
@@ -258,7 +276,63 @@ c10::intrusive_ptr<Work> BackendDummy::send(
   return work;
 }
 
+  // HERE IMPLEMENT THE RECV FUNCTION 
+
+  c10::intrusive_ptr<Work> BackendDummy::recv(std::vector<at::Tensor> & tensors, 
+                              int dstRank, int tag){
+
+    // CHECK THIS STUFF !!!!!!!!!!!!!!!
+    // Create a Future for the operation.
+    auto future = c10::make_intrusive<c10::ivalue::Future>(
+    c10::ListType::create(c10::TensorType::get()));
+    auto work = c10::make_intrusive<WorkDummy>(OpType::SEND, future);
+
+    // SHOULD ADD A WAY TO ALREADY TO KNOW HOW MANY PACKETS SHOULD BE
+    // RECEIVED 
+    int recv_n_packets = 30; 
+    /////////////////////////////////////////////////
+    Packet recv_packet; 
+
+    // FOR each tensor in the list passed by python 
+    for (auto tensor: tensors){
+      
+      float* data = tensor.data_ptr<float>();
+      int total_elements = tensor.numel(); 
+      int elements_added = 0; 
+
+      while (elements_added < total_elements){
+
+      // SCOPE FOR THE LOCK 
+      {
+        std::unique_lock<std::mutex> lock(recv_queueMutex_); 
+        recv_queueCV_.wait(lock, [&]{ return !recvQueue_.empty() || stopThreads_; }); 
+        recv_packet = recvQueue_.front(); 
+        recvQueue_.pop(); 
+      }
+
+      // RIMUOVI 
+      struct iphdr * recv_ip = reinterpret_cast<iphdr*>(recv_packet.data()); 
+      std::cout << "Tot_len_pacchetto: " << recv_ip->tot_len << std::endl;
+      //////////////////////////////////////
+      
+      protocol_header* recv_header = reinterpret_cast<protocol_header*>(recv_packet.data() + sizeof(struct iphdr)); 
+      for (int i = 0; i< 25 ; ++i){
+        // Access all the elements and put them in the tensor 
+        data[elements_added] = recv_header->data[i]; 
+        ++elements_added; 
+      }
+
+      std::cout<< "Added 25 elements" << std::endl; 
+    }
+  }
+  return work; 
+  
+}
+
+
+
 } // namespace c10d
+
 
 // PYBIND11_MODULE must be at global scope, outside any namespace.
 PYBIND11_MODULE(dummy_collectives, m) {
@@ -272,7 +346,13 @@ PYBIND11_MODULE(dummy_collectives, m) {
              return self.send(tensors, dstRank, tag);
            },
            "Send tensors to a destination",
-           py::arg("tensors"), py::arg("dstRank"), py::arg("tag"));
+           py::arg("tensors"), py::arg("dstRank"), py::arg("tag"))
+      .def("recv",
+            [](c10d::BackendDummy &self, std::vector<at::Tensor> tensors, int srcRank, int tag) {
+              return self.recv(tensors, srcRank, tag);
+            },
+            "Receive tensors from a source",
+            py::arg("tensors"), py::arg("srcRank"), py::arg("tag"));
 
   m.def("create_backend_dummy", [](int rank, int size) {
     return c10::make_intrusive<c10d::BackendDummy>(rank, size);

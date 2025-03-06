@@ -55,6 +55,11 @@ class BackendDummy : public Backend {
       int dstRank,
       int tag) override;
 
+  c10::intrusive_ptr<Work> recv(
+        std::vector<at::Tensor>& tensors,
+        int srcRank,
+        int tag) override;
+
   private:
     // For a real implementation, you might store a socket descriptor here.
     int sockFD_send_; // Sending socket
