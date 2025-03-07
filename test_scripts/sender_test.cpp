@@ -6,12 +6,14 @@
 #include <cstring>  // for memset
 #include <cstdlib>  // for exit
 #include <unistd.h> // for close
+#include <string>
 
 #define CUSTOM_PROTOCOL 253
 
 // Define the custom protocol header with 25 float fields.
 struct protocol_header {
-    float data[25]; // 25 floats -> 100 bytes
+    int pool_index; 
+    int data[25]; // 25 floats -> 100 bytes
 } __attribute__((packed));
 
 // Packet alias: a dynamic-size byte buffer.
@@ -42,7 +44,12 @@ unsigned short csum(const Packet &packet) {
     return static_cast<unsigned short>(~sum);
 }
 
-int main(){
+int main(int argc, char* argv[]){
+
+    if (argc != 2){
+        exit(EXIT_FAILURE); 
+    }
+
     // Create a raw socket.
     int sock = socket(AF_INET, SOCK_RAW, CUSTOM_PROTOCOL);
     if (sock < 0){
@@ -74,8 +81,10 @@ int main(){
     protocol_header* new_hdr = reinterpret_cast<protocol_header*>(packet.data() + sizeof(struct iphdr));
     
     // Fill in the custom header data (25 float values).
+    new_hdr->pool_index = std::stoi(argv[1]); 
+
     for (int i = 0; i < 25; ++i){
-        new_hdr->data[i] = static_cast<float>(i);   
+        new_hdr->data[i] = 1;   
     }
 
     // Fill in the IP header.

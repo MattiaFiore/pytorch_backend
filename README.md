@@ -3,20 +3,29 @@
 *BACKEND*: 
 - [ ] Add a way to filter out packets that are not needed in the receivingLoop 
 - [ ] Use the prints only if specified in the execution in order to work only when debugging
+- [ ] add in the protocol the pool index in order to make aggregation 
 - [ ] Fix return type of the recv function 
 - [ ] Remove unused variables 
+- [ ] Add the function to convert float into integers 
 
 *SWITCH*: 
-- [ ] Add parser 
+
+- [ ] Add registers to do the aggregation 
+- [ ] Remove hardcoded routing
+
+*TEST SCRIPT*
+
+
+*CONTROLLER*
 
 # Important stuff that will be implemented after 
 
-- [ ] Add the function to convert float into integers 
-- [ ] Implementing the aggregation in the switch 
 - [ ] Implement a timer for resending packets that were not acked 
-- [ ] Sender/Receiver should do a handshake to agree on the size of the tensor that their are going to exchange 
+- [ ] Sender/Receiver should do a handshake to agree on the size of the tensor that their are going to exchange (this should already be solved since receive depends on the size of the tensor given in input)
+- [ ] Add controller to tell how many register are available in the switch 
 
 # Completed tasks 
+*BACKEND* 
 - [x] Each host must set his own IP address in an automatic whay
 - [x] Sending the actual tensor data 
 - [x] Create the mininet topology in order to execute the code to test it 
@@ -29,6 +38,17 @@
 - [x] Add the recv function
 - [x] fix the wait after send finished (remove time.sleep(100))
 - [x] Verify the correctness of receive through a python script 
+
+*SWITCH*
+- [x] Add parser 
+
+*TEST SCRIPT*
+- [x] Add the pool index that can be inserted by terminal command 
+- [x] Modify the code in order to use int values 
+
+*CONTROLLER*
+- [x] Add a script to see the values inside the registers in order to debug 
+
 
 # Running the code
 
