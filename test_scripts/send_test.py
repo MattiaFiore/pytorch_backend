@@ -3,16 +3,20 @@ import torch
 import time 
 
 def main():
+    
+    # Set maximum number of registers assigned 
+    n_registers = 4
     # Create a BackendDummy with rank=0 and world size=1.
-    backend = dummy_collectives.create_backend_dummy(0, 1)
+    backend = dummy_collectives.create_backend_dummy(0, 1, n_registers)
     print("BackendDummy instance created:", backend)
     
     # Create a sample tensor.
-    tensor =  torch.ones((100, 1), dtype=torch.float32)
+    tensor =  torch.ones((200, 1), dtype=torch.float32)
     tensor2 =  torch.empty((25, 3), dtype=torch.float32)
     # Call the send function on the backend.
     # Here, we're sending a list containing one tensor to destination rank 1 with tag 100.
     work = backend.send([tensor], 1, 100)
+
     received = backend.recv([tensor2], 1, 100)
     #time.sleep(100)
     print(tensor2)

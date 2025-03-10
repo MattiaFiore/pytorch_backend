@@ -6,3 +6,6 @@ sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH python3 send_test.py
 
 echo "/usr/local/lib/python3.8/dist-packages/torch/lib" | sudo tee /etc/ld.so.conf.d/torch.conf
 sudo ldconfig
+
+
+sudo iptables -A OUTPUT -p icmp --icmp-type 3/2 -j DROP

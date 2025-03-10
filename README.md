@@ -1,28 +1,35 @@
 # Next task that will be implemented 
 
 *BACKEND*: 
-- [ ] Add a way to filter out packets that are not needed in the receivingLoop 
-- [ ] Use the prints only if specified in the execution in order to work only when debugging
-- [ ] add in the protocol the pool index in order to make aggregation 
-- [ ] Fix return type of the recv function 
+
+- [ ] Fix return type of the recv function (???)
 - [ ] Remove unused variables 
-- [ ] Add the function to convert float into integers 
+- [ ] Add the function to convert integers into float 
+- [ ] Add the mutex to access `in_flight_packets` 
+- [ ] On the receive access `in_flight_packets` and reduce it
+
 
 *SWITCH*: 
-
-- [ ] Add registers to do the aggregation 
+- [ ] modify parsing with new header
 - [ ] Remove hardcoded routing
+- [ ] Assign pool indexes to different jobs 
 
 *TEST SCRIPT*
 
 
 *CONTROLLER*
 
+*PROTOCOL*
+- [ ] Fix better bounds for the fields 
+- [ ] Check for missing fields
+
 # Important stuff that will be implemented after 
 
 - [ ] Implement a timer for resending packets that were not acked 
 - [ ] Sender/Receiver should do a handshake to agree on the size of the tensor that their are going to exchange (this should already be solved since receive depends on the size of the tensor given in input)
 - [ ] Add controller to tell how many register are available in the switch 
+- [ ] Add a way to filter out packets that are not needed in the receivingLoop 
+- [ ] Use the prints only if specified in the execution in order to work only when debugging
 
 # Completed tasks 
 *BACKEND* 
@@ -38,9 +45,13 @@
 - [x] Add the recv function
 - [x] fix the wait after send finished (remove time.sleep(100))
 - [x] Verify the correctness of receive through a python script 
+- [x] Set maximum sending queue size = number of registers assigned 
+- [x] Modify the protocol in order to add the rest of the information
+- [x] Add the function to convert float into integers 
 
 *SWITCH*
 - [x] Add parser 
+- [x] Add registers to do the aggregation 
 
 *TEST SCRIPT*
 - [x] Add the pool index that can be inserted by terminal command 

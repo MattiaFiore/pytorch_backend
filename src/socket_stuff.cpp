@@ -1,6 +1,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>  // For inet_addr()
 #include <ifaddrs.h> // For extracting the ip address 
+#include <cmath>
+#include <algorithm>
 #include "socket_stuff.hpp"
 #include "dummy.hpp"
 
@@ -64,6 +66,39 @@ bool getLocalIP(sockaddr_in &localAddr) {
 }
 
 // Building the packet in the correct form 
+void float_to_int(float starting[], int quantized[] ){
+    // FIND maximum absolute value
+    float maximum = 0.0; 
+    for (int i = 0; i < FLOAT_PER_PACKET; ++i){
+        float absVal = std::fabs(starting[i]);
+        if (absVal > maximum) {
+            maximum = absVal;
+        }
+    }
+    // IF max is 0 set 0 to everypacket 
+    if (maximum == 0.0f) {
+        for (int i = 0; i < FLOAT_PER_PACKET; ++i) {
+            starting[i] = 0;
+        }
+        return; 
+    }
+
+    // Scaling factor 
+    const int maxInt = (1 << (31 - 1)) - 1;  //32bit integer 
+    float idealScale = static_cast<float>(maxInt) / maximum;
+
+    // Force the scaling factor to be a power of two.
+    int blockExponent = static_cast<int>(std::floor(std::log2(idealScale)));
+    int commonScale = 1 << blockExponent;  // equivalent to 2^blockExponent
+
+    for (int i = 0; i < FLOAT_PER_PACKET; ++i) {
+        quantized[i] = static_cast<int>(std::round(starting[i] * commonScale));
+    }
+
+    return; 
+
+}
+
 void BuildPacket(Packet& packet, float * start, float * end){
 
     // Calculate required packet size.
@@ -74,11 +109,23 @@ void BuildPacket(Packet& packet, float * start, float * end){
     // Optionally, zero the packet if needed.
     std::memset(packet.data(), 0, headerSize);
 
+
     struct iphdr * ip = reinterpret_cast<struct iphdr*>(packet.data());
     protocol_header * new_hdr = reinterpret_cast<protocol_header*>(packet.data() + sizeof(struct iphdr));
+
+    // Checking the float->int function 
+    float arr[FLOAT_PER_PACKET]; 
     for (int i = 0; start<end; ++start, ++i){
-        new_hdr->data[i] = *start;   
+        arr[i] = *start;   
     }
+    int converted_array[FLOAT_PER_PACKET];
+    float_to_int(arr, converted_array); 
+    
+    for (int i = 0; i < FLOAT_PER_PACKET; ++i){
+        new_hdr->data[i] = htonl(converted_array[i]); 
+    }
+
+    
 
     ip->ihl = 5; 
     ip->version = 4;

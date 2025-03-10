@@ -46,7 +46,7 @@ class WorkDummy : public Work {
 // ---------------------------------------------------------------------
 class BackendDummy : public Backend {
  public:
-  BackendDummy(int rank, int size);
+  BackendDummy(int rank, int size, int n_register);
   ~BackendDummy(); 
 
   // Example override: a send operation.
@@ -74,6 +74,8 @@ class BackendDummy : public Backend {
     std::queue<std::vector<char>> sendQueue_;
     std::mutex send_queueMutex_;
     std::condition_variable send_queueCV_;
+    int n_register_; 
+    int in_flight_packets; 
 
     // RECEIVING THREAD QUEUE ATTRIBUTES
     std::queue<std::vector<char>> recvQueue_; 

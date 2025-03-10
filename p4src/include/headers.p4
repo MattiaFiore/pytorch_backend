@@ -52,6 +52,7 @@ header ipv4_t {
 typedef bit<32> value_t; 
 //100 Bytes 
 header data_h{
+    bit<32> pool_index; 
     value_t n01;
     value_t n02;
     value_t n03; 
@@ -78,14 +79,16 @@ header data_h{
     value_t n24; 
 }
 
-struct metadata{
-    bit<16> slice_index; //This will be 0, 20, 40,  ...
-    bit<32> current_counter; 
-    bit<1> already_aggregated; 
-}
+
 
 struct headers {
     ethernet_t eth; 
     ipv4_t ipv4; 
     data_h data; 
+}
+
+// METADATA 
+struct metadata{
+    bit<32> register_index; //This will be 0, 20, 40,  ...
+    //bit<32> current_counter; 
 }

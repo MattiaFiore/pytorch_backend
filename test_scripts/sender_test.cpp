@@ -81,10 +81,10 @@ int main(int argc, char* argv[]){
     protocol_header* new_hdr = reinterpret_cast<protocol_header*>(packet.data() + sizeof(struct iphdr));
     
     // Fill in the custom header data (25 float values).
-    new_hdr->pool_index = std::stoi(argv[1]); 
+    new_hdr->pool_index = ntohl(std::stoi(argv[1])); 
 
     for (int i = 0; i < 25; ++i){
-        new_hdr->data[i] = 1;   
+        new_hdr->data[i] = ntohl(1);   
     }
 
     // Fill in the IP header.

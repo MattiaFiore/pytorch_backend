@@ -38,7 +38,13 @@ while True:
         value = client.register_read('pool', index=i)
         print(value, end = " ")
     print()
-
+    print("COUNTER: ")
+    for i in range(register_size):
+        if i % register_size == 0: 
+            print()
+        value = client.register_read('counter_pool', index=i)
+        print(value, end = " ")
+    print()
     counter+=1
     print('Waiting ...')
     time.sleep(args.time_update)

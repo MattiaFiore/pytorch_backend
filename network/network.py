@@ -42,9 +42,9 @@ def main():
 
     for switch in switches: 
         print(switch)
-        #net.addP4Switch(switch, cli_input='s1-commands.txt')
-        net.addP4Switch(switch)
-        #net.addP4Switch(switch, cli_input='cliconfig.txt')
+
+        net.addP4Switch(switch, cli_input='./network/commands.txt')
+        
         G.add_node(switch, type='switch')
         for host in range(hosts_per_switch):
             name = f"{switch}h{host}"

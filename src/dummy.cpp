@@ -19,10 +19,15 @@ namespace c10d {
 
 using std::cout; 
 
-BackendDummy::BackendDummy(int rank, int size)
+// n_register is used in the creation in order to 
+// use the self-clocking mechanism 
+
+BackendDummy::BackendDummy(int rank, int size, int n_register)
     : Backend(rank, size) {
 
-  
+  // Assign number of register to the class attribute 
+  n_register_ = n_register; 
+  in_flight_packets = 0; 
   std::cout << "Constructing BackendDummy with rank=" << rank 
             << " and size=" << size << std::endl;
   
@@ -77,16 +82,17 @@ BackendDummy::BackendDummy(int rank, int size)
 void BackendDummy::sendingLoop() {
   while (!stopThreads_) { 
     Packet packet;
-      struct sockaddr_in dest;
-      memset(&dest, 0, sizeof(dest));
-      dest.sin_family = AF_INET;
-      dest.sin_addr.s_addr = inet_addr("10.0.0.2");
+    struct sockaddr_in dest;
+    memset(&dest, 0, sizeof(dest));
+    dest.sin_family = AF_INET;
+    dest.sin_addr.s_addr = inet_addr("10.0.0.2");
 
     {
       //Lock the queeue mutex 
       std::unique_lock<std::mutex> lock(send_queueMutex_);
-      // wait for the queue to be not empty or for the threads to be stopped 
-      send_queueCV_.wait(lock, [&]{ return !sendQueue_.empty() || stopThreads_; });
+      // wait until you reach the maximum number of inflight packets
+      // or the thread are to be stopped  
+      send_queueCV_.wait(lock, [&]{ return !sendQueue_.empty() && (in_flight_packets < n_register_) || stopThreads_; });
         if (stopThreads_) {
           break;
         } else {
@@ -102,9 +108,10 @@ void BackendDummy::sendingLoop() {
       //close(sockFD_recv_);
       //close(sockFD_send_); 
       exit(EXIT_FAILURE); 
-
     
     }
+    
+    ++in_flight_packets; 
     cout << "[SENDING LOOP] Pacchetto inviato " << std::endl; 
     
     // Optionally, implement waiting for the ack here, possibly with another condition variable or timeout.
@@ -338,7 +345,7 @@ c10::intrusive_ptr<Work> BackendDummy::send(
 PYBIND11_MODULE(dummy_collectives, m) {
   // Register BackendDummy with a lambda wrapper for the send function.
   py::class_<c10d::BackendDummy, c10::intrusive_ptr<c10d::BackendDummy>>(m, "BackendDummy")
-      .def(py::init<int, int>())
+      .def(py::init<int, int, int>())
       .def("send",
            [](c10d::BackendDummy &self, std::vector<at::Tensor> tensors, int dstRank, int tag) {
              // The lambda receives the vector by value (or const reference)
@@ -354,7 +361,7 @@ PYBIND11_MODULE(dummy_collectives, m) {
             "Receive tensors from a source",
             py::arg("tensors"), py::arg("srcRank"), py::arg("tag"));
 
-  m.def("create_backend_dummy", [](int rank, int size) {
-    return c10::make_intrusive<c10d::BackendDummy>(rank, size);
+  m.def("create_backend_dummy", [](int rank, int size, int n_register) {
+    return c10::make_intrusive<c10d::BackendDummy>(rank, size, n_register);
   });
 }
